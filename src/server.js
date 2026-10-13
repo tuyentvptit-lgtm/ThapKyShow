@@ -12,11 +12,18 @@ const fs = require('node:fs');
 
 const app = express();
 const PORT = Number(process.env.PORT || 3000);
+// Render terminates HTTPS at its proxy. Trust that proxy so secure session
+// cookies can be issued correctly in production.
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 const ROOT = path.resolve(__dirname, '..');
 const PUBLIC = path.join(ROOT, 'public');
-const UPLOADS = path.join(ROOT, 'uploads');
+// Render's filesystem is ephemeral unless a persistent disk is attached.
+// Set DATA_DIR=/var/data when a disk is mounted there.
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : __dirname;
+const UPLOADS = path.join(DATA_DIR, 'uploads');
+fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.mkdirSync(UPLOADS, { recursive: true });
-const db = new Database(path.join(__dirname, 'data.sqlite'));
+const db = new Database(path.join(DATA_DIR, 'data.sqlite'));
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
 
